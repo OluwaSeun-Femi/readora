@@ -11,8 +11,6 @@ author_id integer not null references authors (id)
 
 create table members (
 id serial primary key,
-Page 4 of 13
-Sunday Class Run Book: Library Manager
 name text not null,
 phone text
 );

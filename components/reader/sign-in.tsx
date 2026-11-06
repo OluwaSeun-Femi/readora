@@ -9,7 +9,7 @@ import { button } from "@/components/ui/button";
 import { Field, FormMessage } from "@/components/ui/field";
 import { Wordmark } from "@/components/wordmark";
 
-export function MemberSignIn() {
+export function MemberSignIn({ borrowing }: { borrowing?: { id: number; title: string } | null }) {
   const [state, formAction, pending] = useActionState(memberSignIn, idle);
   const error = (name: string) => (!state.ok && state.field === name ? state.message : undefined);
 
@@ -20,11 +20,17 @@ export function MemberSignIn() {
           className="font-serif text-[40px] font-semibold leading-[1.05] tracking-[-0.02em] sm:text-[52px]"
           style={{ fontVariationSettings: '"opsz" 72' }}
         >
-          Your books, your streak
+          {borrowing ? "Sign in to borrow" : "Your books, your streak"}
         </h1>
         <p className="mt-4 max-w-md text-[17px] text-ink-soft">
-          Sign in to see the books you have at home, mark how far you&rsquo;ve read, and stamp your reading card each day you
-          read.
+          {borrowing ? (
+            <>
+              Sign in with your library card to borrow{" "}
+              <span className="font-serif font-semibold text-ink">&ldquo;{borrowing.title}&rdquo;</span>. Loans last 14 days.
+            </>
+          ) : (
+            "Sign in to borrow books, see the ones you have at home, mark how far you’ve read, and stamp your reading card each day you read."
+          )}
         </p>
         <p className="mt-6 text-[15px] text-ink-faint">
           No PIN yet? Ask the librarian. They&rsquo;ll send one to your phone.
@@ -46,6 +52,7 @@ export function MemberSignIn() {
             <span className="font-serif text-sm italic text-ink-faint">Library card</span>
           </div>
           <form action={formAction} className="mt-6 space-y-4" noValidate>
+            {borrowing && <input type="hidden" name="borrow" value={borrowing.id} />}
             <Field
               label="Phone number"
               name="phone"

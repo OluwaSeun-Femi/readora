@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { BookMarked, KeyRound, LibraryBig } from "lucide-react";
 import { Wordmark } from "@/components/wordmark";
+import { ThemeToggle } from "@/components/theme-switch";
 
 const LINKS = [
   { href: "/", label: "Catalogue", key: "catalogue", icon: LibraryBig },
@@ -23,15 +24,18 @@ export function SiteHeader({ active }: { active: "catalogue" | "me" }) {
                 key={key}
                 href={href}
                 aria-current={current ? "page" : undefined}
-                className={`inline-flex h-10 items-center gap-2 rounded-[10px] px-2.5 text-[15px] font-medium transition-colors sm:px-3 ${
+                aria-label={key === "admin" ? label : undefined}
+                className={`inline-flex h-10 items-center gap-2 whitespace-nowrap rounded-[10px] px-2.5 text-[15px] font-medium transition-colors sm:px-3 ${
                   current ? "bg-sunken text-ink" : "text-ink-soft hover:bg-sunken hover:text-ink"
                 } ${key === "catalogue" ? "max-sm:hidden" : ""}`}
               >
                 <Icon className="size-4" aria-hidden />
-                {label}
+                <span className={key === "admin" ? "max-sm:sr-only" : ""}>{label}</span>
               </Link>
             );
           })}
+          <span className="mx-0.5 h-6 w-px bg-line sm:mx-1" aria-hidden />
+          <ThemeToggle />
         </nav>
       </div>
     </header>

@@ -10,6 +10,7 @@ import { button } from "@/components/ui/button";
 import { Sheet } from "@/components/ui/sheet";
 import { DueStamp } from "@/components/ui/status";
 import { BookForm, LendForm, MemberForm, ReturnButton, type BookOption, type MemberOption } from "./forms";
+import { RemindButton } from "./remind-button";
 
 type Panel = "lend" | "book" | "member" | "lend-member" | null;
 
@@ -125,7 +126,8 @@ export function Overview({
                       </span>
                     </p>
                   </div>
-                  <div className="w-full sm:w-auto [&>button]:w-full sm:[&>button]:w-auto">
+                  <div className="flex w-full items-center gap-1 sm:w-auto [&>button]:flex-1 sm:[&>button]:flex-none">
+                    <RemindButton member={loan.member} phone={loan.phone} title={loan.title} dueOn={loan.due_on} daysLeft={loan.days_left} />
                     <ReturnButton loanId={loan.id} />
                   </div>
                 </motion.li>

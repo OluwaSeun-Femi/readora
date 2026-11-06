@@ -1,29 +1,45 @@
 "use client";
 
-import { useEffect, useOptimistic, useRef, useState, useTransition } from "react";
-import Link from "next/link";
+import { useCallback, useEffect, useOptimistic, useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { toast } from "sonner";
-import { BookCheck, Flame, LibraryBig, LoaderCircle, LogOut, Stamp, Trophy } from "lucide-react";
-import type { ReaderLoan, Streak } from "@/db/queries";
+import { BookCheck, BookOpen, Flame, LibraryBig, LoaderCircle, LogOut, Stamp, Trophy } from "lucide-react";
+import Link from "next/link";
+import type { PublicBook, ReaderLoan, Streak } from "@/db/queries";
 import { logReading, memberSignOut, updateProgress } from "@/app/actions";
 import { addDays, dueLabel, formatDate, plural } from "@/lib/format";
 import { hash } from "@/lib/covers";
 import { button } from "@/components/ui/button";
 import { Cover } from "@/components/ui/book-art";
 import { DueStamp } from "@/components/ui/status";
+import { Sheet } from "@/components/ui/sheet";
+import { BookBrowser, BorrowConfirm } from "./borrow";
 
 export function ReaderHome({
   name,
   loans,
   streak,
   today,
+  books,
+  borrowId,
 }: {
   name: string;
   loans: ReaderLoan[];
   streak: Streak;
   today: string;
+  books: PublicBook[];
+  /** Set when they arrived from "Borrow this book" in the catalogue. */
+  borrowId: number | null;
 }) {
+  const router = useRouter();
+  const [borrowing, setBorrowing] = useState<number | null>(borrowId);
+  const closeBorrow = useCallback(() => {
+    setBorrowing(null);
+    // Drop ?borrow= so a refresh doesn't ask again.
+    if (borrowId) router.replace("/me", { scroll: false });
+  }, [borrowId, router]);
+  const borrowBook = books.find((b) => b.id === borrowing) ?? null;
   const reading = loans.filter((l) => !l.returned_on);
   const read = loans.filter((l) => l.returned_on);
   const first = name.split(" ")[0];
@@ -60,20 +76,32 @@ export function ReaderHome({
         </h2>
         {reading.length === 0 ? (
           <div className="mt-4 flex flex-col items-start gap-4 rounded-[14px] border border-dashed border-line-strong p-6 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-ink-soft">Find something on the shelf and ask the librarian to lend it to you.</p>
-            <Link href="/" className={button.secondary}>
+            <p className="text-ink-soft">Pick something from the list below and borrow it for 14 days.</p>
+            <a href="#borrow-heading" className={button.secondary}>
               <LibraryBig className="size-4" aria-hidden />
-              Browse the shelf
-            </Link>
+              Find a book
+            </a>
           </div>
         ) : (
-          <ul className="mt-4 grid gap-4 md:grid-cols-2">
+          <ul className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
             {reading.map((loan) => (
               <ReadingCard key={loan.id} loan={loan} />
             ))}
           </ul>
         )}
       </section>
+
+      <section aria-labelledby="borrow-heading" className="mt-12 scroll-mt-24">
+        <h2 id="borrow-heading" className="font-serif text-[28px] font-semibold tracking-[-0.01em]">
+          Borrow a book
+        </h2>
+        <p className="mb-4 mt-1 text-ink-soft">Take it from the shelf at the library. It&rsquo;s yours for 14 days.</p>
+        <BookBrowser books={books} mine={new Set(reading.map((l) => l.book_id))} onBorrow={setBorrowing} />
+      </section>
+
+      <Sheet open={borrowBook !== null} onClose={closeBorrow} title="Borrow this book">
+        {borrowBook && <BorrowConfirm key={borrowBook.id} book={borrowBook} today={today} onDone={closeBorrow} onCancel={closeBorrow} />}
+      </Sheet>
 
       {read.length > 0 && (
         <section aria-labelledby="read-heading" className="mt-12">
@@ -276,6 +304,28 @@ function ReadingCard({ loan }: { loan: ReaderLoan }) {
           {overdue ? `${dueLabel(loan.days_left)}. Please bring it back.` : `${dueLabel(loan.days_left)}, ${formatDate(loan.due_on, { year: false })}`}
         </p>
 
+        {loan.page_count > 0 ? (
+          <div className="mt-auto pt-4">
+            <div className="flex items-baseline justify-between text-sm">
+              <span className="font-medium">
+                Page {loan.page} of {loan.page_count}
+              </span>
+              <span className="tabular-nums text-ink-soft">{Math.round((loan.page / loan.page_count) * 100)}%</span>
+            </div>
+            <div className="mt-2 h-2 overflow-hidden rounded-full bg-sunken" aria-hidden>
+              <motion.div
+                className="h-full rounded-full bg-stamp"
+                initial={{ width: 0 }}
+                animate={{ width: `${(loan.page / loan.page_count) * 100}%` }}
+                transition={{ type: "spring", damping: 30, stiffness: 120, delay: 0.2 }}
+              />
+            </div>
+            <Link href={`/read/${loan.book_id}`} className={`${button.stamp} mt-3 w-full`}>
+              <BookOpen className="size-4" aria-hidden />
+              {loan.page > 1 ? "Continue reading" : "Start reading"}
+            </Link>
+          </div>
+        ) : (
         <div className="mt-auto pt-4">
           <div className="flex items-baseline justify-between text-sm">
             <label htmlFor={`progress-${loan.id}`} className="font-medium">
@@ -314,6 +364,7 @@ function ReadingCard({ loan }: { loan: ReaderLoan }) {
             }}
           />
         </div>
+        )}
       </div>
     </li>
   );

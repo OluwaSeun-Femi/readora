@@ -9,6 +9,7 @@ import { button } from "@/components/ui/button";
 import { Sheet } from "@/components/ui/sheet";
 import { StatusPill } from "@/components/ui/status";
 import { BookForm, DeleteBook } from "./forms";
+import { EbookText } from "./ebook-text";
 
 /** The full-page editor at /admin/books/[id]. */
 export function EditBook({ book, authors }: { book: BookRow; authors: string[] }) {
@@ -26,6 +27,7 @@ export function EditBook({ book, authors }: { book: BookRow; authors: string[] }
           <StatusPill dueOn={book.due_on} daysLeft={book.days_left} borrower={book.borrower} />
         </div>
         <BookForm book={book} authors={authors} onDone={() => router.push("/admin/books")} />
+        <EbookText book={book} />
         <div className="mt-8 border-t border-line pt-6">
           <button type="button" className={`${button.ghost} text-alarm hover:bg-alarm-soft hover:text-alarm`} onClick={() => setConfirming(true)}>
             <Trash2 className="size-4" aria-hidden />

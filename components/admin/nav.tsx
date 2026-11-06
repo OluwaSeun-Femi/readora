@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { motion } from "motion/react";
 import { ArrowRightLeft, ExternalLink, LayoutDashboard, LibraryBig, Users } from "lucide-react";
 import { Wordmark } from "@/components/wordmark";
+import { ThemeToggle } from "@/components/theme-switch";
 
 const ITEMS = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard },
@@ -65,6 +66,7 @@ export function NavView({ pathname, footer }: { pathname: string; footer?: React
           })}
         </nav>
         <div className="mt-auto flex flex-col gap-1 border-t border-line pt-4">
+          <ThemeToggle label />
           <Link
             href="/"
             className="flex h-11 items-center gap-3 rounded-[10px] px-3 text-[15px] font-medium text-ink-soft hover:bg-sunken hover:text-ink"
@@ -81,6 +83,7 @@ export function NavView({ pathname, footer }: { pathname: string; footer?: React
           <Wordmark />
         </Link>
         <div className="flex items-center gap-1">
+          <ThemeToggle />
           <Link
             href="/"
             className="inline-flex size-10 items-center justify-center rounded-full text-ink-soft hover:bg-sunken hover:text-ink"

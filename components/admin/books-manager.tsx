@@ -3,7 +3,8 @@
 import { useCallback, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
-import { BookPlus, BookUp2, ImageDown, LibraryBig, LoaderCircle, Pencil, Search, SearchX, Trash2 } from "lucide-react";
+import { BookPlus, BookUp2, Download, ImageDown, LibraryBig, LoaderCircle, Pencil, Search, SearchX, TabletSmartphone, Trash2 } from "lucide-react";
+import { EbookImport } from "./ebook-import";
 import { toast } from "sonner";
 import { findMissingCovers } from "@/app/actions";
 import type { BookRow } from "@/db/queries";
@@ -24,6 +25,7 @@ type Panel =
   | { kind: "delete"; id: number }
   | { kind: "lend"; id: number }
   | { kind: "member"; returnTo: number }
+  | { kind: "ebooks" }
   | null;
 
 export function BooksManager({
@@ -75,6 +77,10 @@ export function BooksManager({
         actions={
           <>
             {missingCovers > 0 && <FindCoversButton count={missingCovers} />}
+            <button type="button" className={button.secondary} onClick={() => setPanel({ kind: "ebooks" })}>
+              <Download className="size-4" aria-hidden />
+              Add e-books
+            </button>
             <button type="button" className={button.primary} onClick={() => setPanel({ kind: "add" })}>
               <BookPlus className="size-4" aria-hidden />
               Add a book
@@ -158,6 +164,12 @@ export function BooksManager({
                           {book.author}
                           {book.year ? `, ${book.year}` : ""}
                         </p>
+                        {book.page_count > 0 && (
+                          <p className="mt-0.5 inline-flex items-center gap-1 text-sm font-medium text-stamp">
+                            <TabletSmartphone className="size-3.5" aria-hidden />
+                            E-book, {book.page_count} pages
+                          </p>
+                        )}
                       </div>
                     </div>
                     <div className="flex flex-wrap items-center justify-between gap-2 sm:justify-end">
@@ -236,6 +248,15 @@ export function BooksManager({
             onAddMember={() => setPanel({ kind: "member", returnTo: current.id })}
           />
         )}
+      </Sheet>
+
+      <Sheet
+        open={panel?.kind === "ebooks"}
+        onClose={close}
+        title="Add e-books"
+        description="Free, public-domain books from Project Gutenberg"
+      >
+        <EbookImport />
       </Sheet>
 
       <Sheet open={panel?.kind === "member"} onClose={close} title="Add a member">

@@ -10,6 +10,8 @@ export type BookRow = {
   author_id: number;
   author: string;
   cover_url: string | null;
+  page_count: number; // 0 = paper copy only
+  ebook_source: string | null;
   loan_id: number | null; // null means Available
   member_id: number | null;
   borrower: string | null;
@@ -27,6 +29,8 @@ export async function getBooks() {
            b.author_id,
            a.name as author,
            b.cover_url,
+           b.page_count,
+           b.ebook_source,
            l.id as loan_id,
            m.id as member_id,
            m.name as borrower,
@@ -47,6 +51,7 @@ export type PublicBook = {
   year: number | null;
   author: string;
   cover_url: string | null;
+  page_count: number; // 0 = paper copy only
   on_loan: boolean;
   due_on: string | null;
   overdue: boolean;
@@ -60,6 +65,7 @@ export async function getPublicBooks() {
            b.year,
            a.name as author,
            b.cover_url,
+           b.page_count,
            (l.id is not null) as on_loan,
            to_char(l.due_on, 'YYYY-MM-DD') as due_on,
            coalesce(l.due_on < current_date, false) as overdue
@@ -72,7 +78,7 @@ export async function getPublicBooks() {
 
 export async function getBook(id: number) {
   const [book] = await sql<BookRow[]>`
-    select b.id, b.title, b.year, b.author_id, a.name as author, b.cover_url,
+    select b.id, b.title, b.year, b.author_id, a.name as author, b.cover_url, b.page_count, b.ebook_source,
            l.id as loan_id, m.id as member_id, m.name as borrower,
            to_char(l.borrowed_on, 'YYYY-MM-DD') as borrowed_on,
            to_char(l.due_on, 'YYYY-MM-DD') as due_on,
@@ -220,6 +226,8 @@ export type ReaderLoan = {
   returned_on: string | null;
   days_left: number;
   progress: number;
+  page: number;
+  page_count: number;
 };
 
 export type Streak = {
@@ -237,7 +245,9 @@ export async function getReaderLoans(memberId: number) {
            to_char(l.due_on, 'YYYY-MM-DD') as due_on,
            to_char(l.returned_on, 'YYYY-MM-DD') as returned_on,
            l.due_on - current_date as days_left,
-           l.progress
+           l.progress,
+           l.page,
+           b.page_count
     from loans l
     join books b on b.id = l.book_id
     join authors a on a.id = b.author_id
@@ -271,4 +281,64 @@ export async function getStreak(memberId: number) {
       ) as recent
   `;
   return streak;
+}
+
+/* --------------------------------------------------------------- e-books */
+
+export type ReaderBook = {
+  id: number;
+  title: string;
+  author: string;
+  page_count: number;
+  ebook_source: string | null;
+  loan_id: number | null; // this member's open loan, if they have the book
+  page: number;
+  due_on: string | null;
+  days_left: number | null;
+  on_loan_to_someone_else: boolean;
+};
+
+/** A book as one member sees it in the reader: whether they have it, and their page. */
+export async function getReaderBook(memberId: number, bookId: number) {
+  const [book] = await sql<ReaderBook[]>`
+    select b.id, b.title, a.name as author, b.page_count, b.ebook_source,
+           mine.id as loan_id,
+           coalesce(mine.page, 1) as page,
+           to_char(mine.due_on, 'YYYY-MM-DD') as due_on,
+           mine.due_on - current_date as days_left,
+           exists (
+             select 1 from loans other
+             where other.book_id = b.id and other.returned_on is null and other.member_id <> ${memberId}
+           ) as on_loan_to_someone_else
+    from books b
+    join authors a on a.id = b.author_id
+    left join loans mine on mine.book_id = b.id and mine.member_id = ${memberId} and mine.returned_on is null
+    where b.id = ${bookId}
+  `;
+  return book ?? null;
+}
+
+export async function getChapters(bookId: number) {
+  return sql<{ page_no: number; title: string }[]>`
+    select page_no, title from book_chapters where book_id = ${bookId} order by page_no
+  `;
+}
+
+/** Pages from..to of a book (inclusive). */
+export async function getPages(bookId: number, from: number, to: number) {
+  return sql<{ page_no: number; body: string }[]>`
+    select page_no, body from book_pages
+    where book_id = ${bookId} and page_no between ${from} and ${to}
+    order by page_no
+  `;
+}
+
+/** Which Project Gutenberg books are already in the library, by Gutenberg id. */
+export async function gutenbergIdsInLibrary(ids: number[]) {
+  if (ids.length === 0) return new Set<number>();
+  const sources = ids.map((id) => `gutenberg:${id}`);
+  const rows = await sql<{ ebook_source: string }[]>`
+    select ebook_source from books where ebook_source = any(${sources}::text[])
+  `;
+  return new Set(rows.map((r) => Number(r.ebook_source.split(":")[1])));
 }

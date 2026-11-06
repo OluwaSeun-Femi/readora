@@ -2,6 +2,10 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   cacheComponents: true,
+  experimental: {
+    // Librarians can upload a book's text (.txt, up to 4 MB) as an e-book.
+    serverActions: { bodySizeLimit: "5mb" },
+  },
   partialPrefetching: true,
   turbopack: {
     rules: {

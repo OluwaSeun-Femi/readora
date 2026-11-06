@@ -15,7 +15,7 @@ export function Cover({
   author: string;
   /** A real front cover. While it loads, or if it fails, the designed cover shows. */
   src?: string | null;
-  size?: "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md" | "lg";
   className?: string;
 }) {
   const [state, setState] = useState<"loading" | "loaded" | "failed">("loading");
@@ -33,7 +33,7 @@ export function Cover({
       <div className="absolute inset-y-0 left-[7%] w-px bg-black/25" />
       <div className="absolute inset-y-0 left-[calc(7%+1px)] w-px bg-white/10" />
       <div
-        className={`absolute inset-x-[14%] flex flex-col items-center text-center ${size === "sm" ? "top-[12%] bottom-[10%]" : "top-[13%] bottom-[11%]"}`}
+        className={`absolute inset-x-[14%] flex flex-col items-center text-center ${size === "sm" || size === "xs" ? "top-[12%] bottom-[10%]" : "top-[13%] bottom-[11%]"} ${size === "xs" ? "[&_p]:hidden" : ""}`}
       >
         <div className="h-px w-full opacity-70" style={{ backgroundColor: cloth.foil }} />
         <div className="mt-[3px] h-px w-full opacity-40" style={{ backgroundColor: cloth.foil }} />
@@ -55,7 +55,7 @@ export function Cover({
       {src && state !== "failed" && (
         // eslint-disable-next-line @next/next/no-img-element -- covers come from Open Library; a plain img keeps it simple
         <img
-          src={coverSize(src, size === "lg" ? "L" : "M")}
+          src={coverSize(src, size === "lg" ? "L" : size === "xs" ? "S" : "M")}
           alt=""
           loading="lazy"
           decoding="async"

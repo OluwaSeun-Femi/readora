@@ -29,8 +29,26 @@
   --ease-settle: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
+/*
+  Themes. <html data-theme="light"> or "dark" is a choice the reader made;
+  no data-theme means "System": follow the device.
+*/
+@custom-variant dark {
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme="light"]), :root:not([data-theme="light"]) *) {
+      @slot;
+    }
+  }
+}
+
+:root {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
     --color-paper: #11151c;
     --color-surface: #181e27;
     --color-sunken: #0d1117;
@@ -46,11 +64,37 @@
     --color-leaf-soft: #14301f;
     --color-alarm: #ff8a7a;
     --color-alarm-soft: #3b1915;
+    color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-paper: #11151c;
+    --color-surface: #181e27;
+    --color-sunken: #0d1117;
+    --color-ink: #e8ebf1;
+    --color-ink-soft: #b2bac8;
+    --color-ink-faint: #8790a2;
+    --color-line: #29313e;
+    --color-line-strong: #3a4454;
+
+    --color-stamp: #aea3ff;
+    --color-stamp-soft: #25224a;
+    --color-leaf: #62c98f;
+    --color-leaf-soft: #14301f;
+    --color-alarm: #ff8a7a;
+    --color-alarm-soft: #3b1915;
+    color-scheme: dark;
   }
 }
 
+/* Colours ease across when the theme changes, but only then (see theme-switch.tsx). */
+.theme-changing,
+.theme-changing * {
+  transition: background-color 280ms ease, border-color 280ms ease, color 200ms ease !important;
+}
+
 html {
-  color-scheme: light dark;
   -webkit-tap-highlight-color: transparent;
 }
 

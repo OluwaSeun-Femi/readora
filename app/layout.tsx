@@ -22,6 +22,8 @@ const atkinson = localFont({
   display: "swap",
 });
 
+const THEME_SCRIPT = `try{var t=localStorage.getItem("readora-theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}`;
+
 export const metadata: Metadata = {
   title: { default: "Readora Library", template: "%s | Readora Library" },
   description: "See what's on the shelf at the Readora lending library.",
@@ -36,7 +38,12 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${literata.variable} ${atkinson.variable} h-full antialiased`}>
+    // suppressHydrationWarning: the theme script below sets data-theme before React loads.
+    <html lang="en" className={`${literata.variable} ${atkinson.variable} h-full antialiased`} suppressHydrationWarning>
+      <head>
+        {/* Apply the saved theme before the first paint, so a dark page never flashes white. */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      </head>
       {/* suppressHydrationWarning: extensions like Grammarly add attributes to <body> */}
       <body className="flex min-h-full flex-col" suppressHydrationWarning>
         <Providers>{children}</Providers>

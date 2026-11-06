@@ -5,14 +5,14 @@ import { Catalog } from "@/components/catalog/catalog";
 import { ShelfSkeleton } from "@/components/catalog/shelf";
 import { SiteHeader } from "@/components/site-header";
 
-export default function CatalogPage() {
+export default function CatalogPage({ searchParams }: PageProps<"/">) {
   return (
     <>
       <SiteHeader active="catalogue" />
 
       <main className="flex-1">
         <Suspense fallback={<CatalogLoading />}>
-          <CatalogData />
+          <CatalogData searchParams={searchParams} />
         </Suspense>
       </main>
 
@@ -28,11 +28,13 @@ export default function CatalogPage() {
   );
 }
 
-async function CatalogData() {
+async function CatalogData({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   // Wait for a real visitor, so the shelf is read fresh from the database every time.
   await connection();
-  const books = await getPublicBooks();
-  return <Catalog books={books} />;
+  const [books, { book }] = await Promise.all([getPublicBooks(), searchParams]);
+  // ?book=12 opens that book's details, so a shared WhatsApp link lands on the right book.
+  const openBook = Number(Array.isArray(book) ? book[0] : book) || null;
+  return <Catalog books={books} openBook={books.some((b) => b.id === openBook) ? openBook : null} />;
 }
 
 function CatalogLoading() {

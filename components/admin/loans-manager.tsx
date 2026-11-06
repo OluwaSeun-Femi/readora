@@ -11,6 +11,7 @@ import { Sheet } from "@/components/ui/sheet";
 import { DueStamp } from "@/components/ui/status";
 import { LendForm, MemberForm, ReturnButton, type BookOption, type MemberOption } from "./forms";
 import { EmptyState, PageHeader } from "./page-header";
+import { RemindButton } from "./remind-button";
 
 type Filter = "out" | "overdue" | "returned";
 
@@ -153,7 +154,12 @@ export function LoansManager({
                             }`}
                       </p>
                     </div>
-                    {!loan.returned_on && <ReturnButton loanId={loan.id} />}
+                    {!loan.returned_on && (
+                      <div className="flex shrink-0 items-center gap-1">
+                        <RemindButton member={loan.member} phone={loan.phone} title={loan.title} dueOn={loan.due_on} daysLeft={loan.days_left} />
+                        <ReturnButton loanId={loan.id} />
+                      </div>
+                    )}
                   </div>
                 </motion.li>
               ))}

@@ -2,7 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { BookOpen, CalendarClock, CircleCheck, Search, SearchX, X } from "lucide-react";
+import Link from "next/link";
+import { BookOpen, BookUp2, CalendarClock, CircleCheck, MessageCircle, Search, SearchX, TabletSmartphone, X } from "lucide-react";
+import { whatsappLink } from "@/lib/whatsapp";
+import { button } from "@/components/ui/button";
 import type { PublicBook } from "@/db/queries";
 import { Cover } from "@/components/ui/book-art";
 import { Segmented } from "@/components/ui/segmented";
@@ -10,15 +13,16 @@ import { Sheet } from "@/components/ui/sheet";
 import { formatDate, plural } from "@/lib/format";
 import { Shelf } from "./shelf";
 
-type Filter = "all" | "available" | "out";
+type Filter = "all" | "available" | "out" | "ebooks";
 
-export function Catalog({ books }: { books: PublicBook[] }) {
+export function Catalog({ books, openBook: initialOpen = null }: { books: PublicBook[]; openBook?: number | null }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
-  const [openId, setOpenId] = useState<number | null>(null);
+  const [openId, setOpenId] = useState<number | null>(initialOpen);
   const searchRef = useRef<HTMLInputElement>(null);
 
   const out = books.filter((b) => b.on_loan).length;
+  const ebooks = books.filter((b) => b.page_count > 0).length;
   const onShelf = books.length - out;
 
   // "/" jumps to the search box, as on most catalogues.
@@ -39,6 +43,7 @@ export function Catalog({ books }: { books: PublicBook[] }) {
     return books.filter((book) => {
       if (filter === "available" && book.on_loan) return false;
       if (filter === "out" && !book.on_loan) return false;
+      if (filter === "ebooks" && book.page_count === 0) return false;
       const haystack = `${book.title} ${book.author} ${book.year ?? ""}`.toLowerCase();
       return words.every((word) => haystack.includes(word));
     });
@@ -84,6 +89,7 @@ export function Catalog({ books }: { books: PublicBook[] }) {
               { value: "all", label: "All", count: books.length },
               { value: "available", label: "On the shelf", count: onShelf },
               { value: "out", label: "Out on loan", count: out },
+              ...(ebooks ? [{ value: "ebooks" as const, label: "E-books", count: ebooks }] : []),
             ]}
           />
         </div>
@@ -158,8 +164,9 @@ export function Catalog({ books }: { books: PublicBook[] }) {
                     onClick={() => setOpenId(book.id)}
                     className="group block w-full rounded-[12px] text-left"
                   >
-                    <div className="transition-transform duration-300 ease-[var(--ease-settle)] group-hover:-translate-y-1 group-active:translate-y-0">
+                    <div className="relative transition-transform duration-300 ease-[var(--ease-settle)] group-hover:-translate-y-1 group-active:translate-y-0">
                       <Cover title={book.title} author={book.author} src={book.cover_url} />
+                      {book.page_count > 0 && <EbookBadge className="absolute left-2.5 top-2.5" />}
                     </div>
                     <p className="mt-3 line-clamp-2 font-serif text-[17px] font-semibold leading-snug">{book.title}</p>
                     <p className="mt-0.5 text-[15px] text-ink-soft">
@@ -220,6 +227,12 @@ function BookDetails({
         <div className="min-w-0 pt-1">
           <p className="font-serif text-lg italic text-ink-soft">{book.author}</p>
           {book.year && <p className="mt-1 text-[15px] text-ink-faint">First published {book.year}</p>}
+          {book.page_count > 0 && (
+            <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-stamp-soft px-2.5 py-1 text-sm font-medium text-stamp">
+              <TabletSmartphone className="size-4" aria-hidden />
+              E-book, {book.page_count} pages
+            </p>
+          )}
         </div>
       </div>
 
@@ -237,10 +250,26 @@ function BookDetails({
           </p>
           <p className="mt-0.5 text-[15px] opacity-85">
             {book.on_loan
-              ? "Ask the librarian to keep it for you when it comes back."
-              : "Ask the librarian to lend it to you. Loans last 14 days."}
+              ? book.page_count > 0
+                ? "The library lends one copy at a time. Check back after it's returned."
+                : "Check back after it's returned."
+              : book.page_count > 0
+                ? "Borrow it with your library card and read it right here. Loans last 14 days, and your page is saved."
+                : "Borrow it with your library card. Loans last 14 days."}
           </p>
         </div>
+      </div>
+
+      <div className="mt-4 grid gap-2 sm:grid-cols-[1fr_auto]">
+        {!book.on_loan ? (
+          <Link href={`/me?borrow=${book.id}`} className={`${button.stamp} w-full`}>
+            {book.page_count > 0 ? <BookOpen className="size-4" aria-hidden /> : <BookUp2 className="size-4" aria-hidden />}
+            {book.page_count > 0 ? "Borrow and read" : "Borrow this book"}
+          </Link>
+        ) : (
+          <span className="hidden sm:block" />
+        )}
+        <ShareButton book={book} />
       </div>
 
       {moreByAuthor.length > 0 && (
@@ -271,5 +300,31 @@ function BookDetails({
         </div>
       )}
     </div>
+  );
+}
+
+export function EbookBadge({ className = "" }: { className?: string }) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-full bg-[#0b1020]/70 px-2 py-0.5 text-xs font-semibold text-white backdrop-blur-sm ${className}`}
+    >
+      <TabletSmartphone className="size-3.5" aria-hidden />
+      E-book
+    </span>
+  );
+}
+
+/** Opens WhatsApp with a link to this book, to send to a friend or a group. */
+function ShareButton({ book }: { book: PublicBook }) {
+  const share = () => {
+    const url = `${window.location.origin}/?book=${book.id}`;
+    const text = `"${book.title}" by ${book.author} is ${book.on_loan ? "in" : "on the shelf at"} Readora Library${book.page_count > 0 ? ", and you can read it online" : ""}: ${url}`;
+    window.open(whatsappLink(text), "_blank", "noopener,noreferrer");
+  };
+  return (
+    <button type="button" onClick={share} className={`${button.secondary} w-full`}>
+      <MessageCircle className="size-4" aria-hidden />
+      Share on WhatsApp
+    </button>
   );
 }

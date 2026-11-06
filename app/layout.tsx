@@ -1,29 +1,46 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import localFont from "next/font/local";
+import { Providers } from "./providers";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+// Both fonts are bundled with the app (SIL Open Font License), so nothing is fetched from Google.
+const literata = localFont({
+  src: [
+    { path: "./fonts/literata-latin-opsz-normal.woff2", style: "normal", weight: "200 900" },
+    { path: "./fonts/literata-latin-opsz-italic.woff2", style: "italic", weight: "200 900" },
+  ],
+  variable: "--font-literata",
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+const atkinson = localFont({
+  src: [
+    { path: "./fonts/atkinson-hyperlegible-next-latin-wght-normal.woff2", style: "normal", weight: "200 800" },
+    { path: "./fonts/atkinson-hyperlegible-next-latin-wght-italic.woff2", style: "italic", weight: "200 800" },
+  ],
+  variable: "--font-atkinson",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Readora Library",
-  description: "Books, members and loans for the church lending library",
+  title: { default: "Readora Library", template: "%s | Readora Library" },
+  description: "See what's on the shelf at the Readora lending library.",
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f4f6f9" },
+    { media: "(prefers-color-scheme: dark)", color: "#11151c" },
+  ],
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col" suppressHydrationWarning>{children}</body>
+    <html lang="en" className={`${literata.variable} ${atkinson.variable} h-full antialiased`}>
+      {/* suppressHydrationWarning: extensions like Grammarly add attributes to <body> */}
+      <body className="flex min-h-full flex-col" suppressHydrationWarning>
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }

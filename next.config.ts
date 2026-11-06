@@ -1,7 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
   cacheComponents: true,
   partialPrefetching: true,
   turbopack: {
@@ -11,6 +10,10 @@ const nextConfig: NextConfig = {
         as: "*.css",
       },
     },
+  },
+  // The SPEC's /members page now lives in the librarian area.
+  async redirects() {
+    return [{ source: "/members", destination: "/admin/members", permanent: false }];
   },
 };
 

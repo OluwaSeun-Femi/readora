@@ -1,85 +1,46 @@
 import { Suspense } from "react";
 import { connection } from "next/server";
-import { getBooks } from "@/db/queries";
+import { getPublicBooks } from "@/db/queries";
+import { Catalog } from "@/components/catalog/catalog";
+import { ShelfSkeleton } from "@/components/catalog/shelf";
+import { SiteHeader } from "@/components/site-header";
 
-export default function BooksPage() {
-  return (
-    <main className="mx-auto w-full max-w-2xl px-4 py-8 sm:py-12">
-      <header className="mb-6">
-        <p className="text-sm font-medium uppercase tracking-wide text-emerald-700 dark:text-emerald-400">
-          Readora Library
-        </p>
-        <h1 className="mt-1 text-3xl font-semibold tracking-tight">Books</h1>
-      </header>
-
-      <Suspense fallback={<BooksLoading />}>
-        <BookList />
-      </Suspense>
-    </main>
-  );
-}
-
-async function BookList() {
-  // Wait for a real visitor, so the list is read fresh from the database every time.
-  await connection();
-  const books = await getBooks();
-
-  if (books.length === 0) {
-    return (
-      <p className="rounded-xl border border-dashed border-zinc-300 p-6 text-center text-zinc-600 dark:border-zinc-700 dark:text-zinc-400">
-        No books yet.
-      </p>
-    );
-  }
-
-  const onLoan = books.filter((book) => book.borrower).length;
-
+export default function CatalogPage() {
   return (
     <>
-      <p className="mb-4 text-sm text-zinc-600 dark:text-zinc-400">
-        {books.length} {books.length === 1 ? "book" : "books"} · {onLoan} on loan
-      </p>
+      <SiteHeader active="catalogue" />
 
-      <ul className="space-y-3">
-        {books.map((book) => (
-          <li
-            key={book.id}
-            className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
-          >
-            <h2 className="text-base font-semibold leading-snug">{book.title}</h2>
-            <p className="mt-0.5 text-sm text-zinc-600 dark:text-zinc-400">
-              {book.author}
-              {book.year ? ` · ${book.year}` : ""}
-            </p>
+      <main className="flex-1">
+        <Suspense fallback={<CatalogLoading />}>
+          <CatalogData />
+        </Suspense>
+      </main>
 
-            {book.borrower ? (
-              <p className="mt-3 inline-block rounded-lg bg-amber-100 px-3 py-1 text-sm font-medium text-amber-900 dark:bg-amber-500/15 dark:text-amber-300">
-                On loan to {book.borrower}, due {book.due_on}
-              </p>
-            ) : (
-              <p className="mt-3 inline-block rounded-lg bg-emerald-100 px-3 py-1 text-sm font-medium text-emerald-900 dark:bg-emerald-500/15 dark:text-emerald-300">
-                Available
-              </p>
-            )}
-          </li>
-        ))}
-      </ul>
+      <footer className="border-t border-line">
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-1 px-4 py-6 text-sm text-ink-faint sm:flex-row sm:justify-between sm:px-6">
+          <p>Readora lending library. One copy of each book, lent for 14 days.</p>
+          <a href="/api/books" className="underline-offset-4 hover:text-ink hover:underline">
+            Book list as JSON
+          </a>
+        </div>
+      </footer>
     </>
   );
 }
 
-function BooksLoading() {
+async function CatalogData() {
+  // Wait for a real visitor, so the shelf is read fresh from the database every time.
+  await connection();
+  const books = await getPublicBooks();
+  return <Catalog books={books} />;
+}
+
+function CatalogLoading() {
   return (
-    <div aria-busy="true">
-      <p className="mb-4 text-sm text-zinc-600 dark:text-zinc-400">Loading…</p>
-      <ul className="space-y-3">
-        {[0, 1, 2].map((i) => (
-          <li
-            key={i}
-            className="h-28 animate-pulse rounded-xl border border-zinc-200 bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900"
-          />
-        ))}
-      </ul>
+    <div className="mx-auto w-full max-w-6xl px-4 pt-8 sm:px-6 sm:pt-12" aria-busy="true">
+      <div className="mb-8 h-14 w-80 max-w-full animate-pulse rounded-lg bg-sunken" />
+      <ShelfSkeleton />
+      <p className="sr-only">Loading the shelf…</p>
     </div>
   );
 }

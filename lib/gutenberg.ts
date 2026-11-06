@@ -51,7 +51,7 @@ function toBook(raw: RawBook): GutenbergBook {
 }
 
 async function getJson<T>(path: string): Promise<T> {
-  const response = await fetch(`${BASE}${path}`, { headers: HEADERS, signal: AbortSignal.timeout(10000), cache: "no-store" });
+  const response = await fetch(`${BASE}${path}`, { headers: HEADERS, signal: AbortSignal.timeout(25000), cache: "no-store" });
   if (!response.ok) throw new Error(`Gutendex answered ${response.status}`);
   return (await response.json()) as T;
 }
@@ -81,7 +81,8 @@ function allowedTextHost(url: string) {
 
 export async function downloadText(url: string) {
   if (!allowedTextHost(url)) throw new Error("That text isn't hosted by Project Gutenberg.");
-  const response = await fetch(url, { headers: HEADERS, signal: AbortSignal.timeout(25000), redirect: "follow", cache: "no-store" });
+  // A whole book can be large, so allow a slow connection a full minute.
+  const response = await fetch(url, { headers: HEADERS, signal: AbortSignal.timeout(60000), redirect: "follow", cache: "no-store" });
   if (!response.ok) throw new Error(`Project Gutenberg answered ${response.status}`);
   if (!allowedTextHost(response.url || url)) throw new Error("The download was redirected away from Project Gutenberg.");
   const length = Number(response.headers.get("content-length") ?? 0);

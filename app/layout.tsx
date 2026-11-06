@@ -42,7 +42,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="en" className={`${literata.variable} ${atkinson.variable} h-full antialiased`} suppressHydrationWarning>
       <head>
         {/* Apply the saved theme before the first paint, so a dark page never flashes white. */}
-        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+        {/* suppressHydrationWarning: some browser extensions rewrite the first script in <head>. */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} suppressHydrationWarning />
       </head>
       {/* suppressHydrationWarning: extensions like Grammarly add attributes to <body> */}
       <body className="flex min-h-full flex-col" suppressHydrationWarning>

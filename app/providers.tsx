@@ -1,9 +1,23 @@
 "use client";
 
+import { useEffect } from "react";
 import { MotionConfig } from "motion/react";
 import { Toaster } from "sonner";
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  // Backup for the theme script in <head>: if an extension stopped it running, apply the saved theme now.
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("readora-theme");
+      if ((saved === "light" || saved === "dark") && document.documentElement.dataset.theme !== saved) {
+        document.documentElement.dataset.theme = saved;
+        window.dispatchEvent(new Event("readora-theme"));
+      }
+    } catch {
+      // Storage can be blocked in private browsing; the device setting is used instead.
+    }
+  }, []);
+
   return (
     // reducedMotion="user": animations calm down for people who ask their device for less motion.
     <MotionConfig reducedMotion="user">
